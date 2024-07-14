@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package protocol;
+
+option go_package = "/protocol";
+
+message LogMessage {
+  string time = 1;
+  uint32 severity = 2;
+  string service = 3;
+  string message = 4;
+}
+
+service Logger {
+  rpc Write(LogMessage) returns (WriteResponse);
+  rpc Read(ReadRequest) returns (ReadResponse);
+}
+
+message WriteResponse {
+  uint32 StatusCode = 1;
+}
+
+message ReadRequest {
+  uint32 severity = 2;
+  string service = 3;
+}
+
+message ReadResponse {
+  uint32 StatusCode = 1;
+  repeated LogMessage logs = 2;
+}
