@@ -1,6 +1,6 @@
 module github.com/howtri/gLogger
 
-go 1.22.5
+go 1.20
 
 require (
 	google.golang.org/grpc v1.65.0
