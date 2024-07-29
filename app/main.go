@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net"
 
@@ -11,12 +13,16 @@ import (
 )
 
 func main() {
-	lis, err := net.Listen("tcp", ":8081")
+	pPort := flag.Int("Port", 8080, "Port for the logger to listen on")
+	pLogFileName := flag.String("Log File", "gLog.txt", "Log file to write and read log messages to/from")
+	flag.Parse()
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *pPort))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	gLogger := server.NewgLogger()
+	gLogger := server.NewgLogger(pLogFileName)
 	protocol.RegisterLoggerServer(s, gLogger)
 
 	log.Println("gLogger listening")
