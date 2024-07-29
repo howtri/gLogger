@@ -10,7 +10,7 @@ Plan
 - generate the server gRPC code [X]
 - in main initialize the gRPC server so it is listening [X]
 - create a function handleRequest that is passed to a goRoutine along with a mutex for writes []
-- have a function that handles the write path and one for the read path []
+- have a function that handles the write path and one for the read path [X]
 - maintain another function that handles emitting metrics through the use of channels []
 - create the grafana dashboards []
 - Create Docker Images []

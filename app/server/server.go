@@ -22,13 +22,30 @@ func NewgLogger(pFileName *string) *gLogger {
 }
 
 func (l *gLogger) Write(ctx context.Context, msg *protocol.LogMessage) (*protocol.WriteResponse, error) {
-	// TODO: Wrap in goroutine as an anonymous functiona
+	responseChan := make(chan *protocol.WriteResponse)
+	errorChan := make(chan error)
+	defer close(responseChan)
+	defer close(errorChan)
+
+	go l.ThreadWriteLog(msg, responseChan, errorChan)
+
+	select {
+	case response := <-responseChan:
+		return response, nil
+	case err := <-errorChan:
+		return nil, err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (l *gLogger) ThreadWriteLog(msg *protocol.LogMessage, responseChan chan<- *protocol.WriteResponse, errorChan chan<- error) {
 	log := msg.GetMessage()
 
 	file, err := os.OpenFile(l.fileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return nil, err
+		errorChan <- fmt.Errorf("Failed to open log file: %w", err)
+		return
 	}
 	defer file.Close()
 
@@ -37,10 +54,11 @@ func (l *gLogger) Write(ctx context.Context, msg *protocol.LogMessage) (*protoco
 
 	_, err = gzipWriter.Write([]byte(log))
 	if err != nil {
-		fmt.Println("Error writing to gzip writer:", err)
-		return nil, err
+		errorChan <- fmt.Errorf("Failed to write to gzip writer: %w", err)
+		return
 	}
-	return &protocol.WriteResponse{StatusCode: 1}, nil
+
+	responseChan <- &protocol.WriteResponse{StatusCode: 1}
 }
 
 func (l *gLogger) Read(ctx context.Context, msg *protocol.ReadRequest) (*protocol.ReadResponse, error) {
