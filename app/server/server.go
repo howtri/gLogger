@@ -62,19 +62,35 @@ func (l *gLogger) ThreadWriteLog(msg *protocol.LogMessage, responseChan chan<- *
 }
 
 func (l *gLogger) Read(ctx context.Context, msg *protocol.ReadRequest) (*protocol.ReadResponse, error) {
-	// TODO: Wrap in goroutine as an anonymous function
+	responseChan := make(chan *protocol.ReadResponse)
+	errorChan := make(chan error)
+	go l.ThreadReadLog(msg, responseChan, errorChan)
+
+	select {
+	case response := <-responseChan:
+		return response, nil
+	case err := <-errorChan:
+		return nil, err
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (l *gLogger) ThreadReadLog(msg *protocol.ReadRequest, responseChan chan<- *protocol.ReadResponse, errorChan chan<- error) {
+	// Scope to the individual services (service isolation)
 	fmt.Printf("Read request is %s!\n", msg.GetService())
-	fmt.Println("Log we are reading from is %s", l.fileName)
 
 	file, err := os.Open(l.fileName)
 	if err != nil {
-		return nil, err
+		errorChan <- fmt.Errorf("Failed to open the log file: %w", err)
+		return
 	}
 	defer file.Close()
 
 	gzipReader, err := gzip.NewReader(file)
 	if err != nil {
-		return nil, err
+		errorChan <- fmt.Errorf("Failed to create the gzip Reader: %w", err)
+		return
 	}
 	defer gzipReader.Close()
 
@@ -85,5 +101,5 @@ func (l *gLogger) Read(ctx context.Context, msg *protocol.ReadRequest) (*protoco
 		message := protocol.LogMessage{Message: scanner.Text()}
 		messages = append(messages, &message)
 	}
-	return &protocol.ReadResponse{StatusCode: 1, Logs: messages}, nil
+	responseChan <- &protocol.ReadResponse{StatusCode: 1, Logs: messages}
 }
