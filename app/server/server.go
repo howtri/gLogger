@@ -2,6 +2,7 @@ package server
 
 import (
 	"bufio"
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -31,7 +32,14 @@ func (l *gLogger) Write(ctx context.Context, msg *protocol.LogMessage) (*protoco
 	}
 	defer file.Close()
 
-	file.WriteString(log)
+	gzipWriter := gzip.NewWriter(file)
+	defer gzipWriter.Close()
+
+	_, err = gzipWriter.Write([]byte(log))
+	if err != nil {
+		fmt.Println("Error writing to gzip writer:", err)
+		return nil, err
+	}
 	return &protocol.WriteResponse{StatusCode: 1}, nil
 }
 
@@ -46,7 +54,13 @@ func (l *gLogger) Read(ctx context.Context, msg *protocol.ReadRequest) (*protoco
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
+	gzipReader, err := gzip.NewReader(file)
+	if err != nil {
+		return nil, err
+	}
+	defer gzipReader.Close()
+
+	scanner := bufio.NewScanner(gzipReader)
 
 	var messages []*protocol.LogMessage
 	for scanner.Scan() {
