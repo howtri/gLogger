@@ -11,7 +11,30 @@ import (
 	"github.com/howtri/gLogger/app/protocol"
 	"github.com/howtri/gLogger/app/server"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"google.golang.org/grpc"
+	"net/http"
+)
+
+// Define Prometheus metrics
+var (
+	grpcRequests = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "grpc_requests_total",
+			Help: "Total number of gRPC requests",
+		},
+		[]string{"method"},
+	)
+	grpcRequestDuration = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "grpc_request_duration_seconds",
+			Help:    "Duration of gRPC requests",
+			Buckets: prometheus.DefBuckets,
+		},
+		[]string{"method"},
+	)
 )
 
 func loggingInterceptor(
@@ -28,15 +51,36 @@ func loggingInterceptor(
 	return resp, err
 }
 
+func metricsInterceptor(
+	ctx context.Context,
+	req interface{},
+	info *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (interface{}, error) {
+	grpcRequests.WithLabelValues(info.FullMethod).Inc()
+	timer := prometheus.NewTimer(grpcRequestDuration.WithLabelValues(info.FullMethod))
+	defer timer.ObserveDuration()
+
+	return handler(ctx, req)
+}
+
 func main() {
-	pPort := flag.Int("Port", 8080, "Port for the logger to listen on")
+	pPort := flag.Int("Port", 8081, "Port for the logger to listen on")
 	pLogFileName := flag.String("Log File", "gLog.txt", "Log file to write and read log messages to/from")
 	flag.Parse()
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *pPort))
+	// Prometheus metrics endpoint
+	http.Handle("/metrics", promhttp.Handler())
+	go func() {
+		http.ListenAndServe("0.0.0.0:2112", nil)
+	}()
+
+	// gRPC endpoint
+	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", *pPort))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
 	s := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			loggingInterceptor,
