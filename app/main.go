@@ -84,7 +84,7 @@ func main() {
 	s := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
 			loggingInterceptor,
-			// metricsInterceptor,
+			metricsInterceptor,
 		),
 	)
 	gLogger := server.NewgLogger(pLogFileName)
