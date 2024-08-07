@@ -28,6 +28,9 @@ Plan
 python3 -m grpc_tools.protoc -I=app/protocol --python_out=client/ --grpc_python_out=client/ app/protocol/logger.proto
 export PATH=$PATH:$(go env GOPATH)/bin
 
+# gLogger service start
 sudo docker build -t glogger .
-
 sudo docker run -p 8081:8081 -p 2112:2112 glogger
+
+# gLogger and Prometheus collector start
+docker-compose up --build

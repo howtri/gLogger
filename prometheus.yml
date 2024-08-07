@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'gLogger'
+    static_configs:
+      - targets: ['glogger:2112'] # Replace 'glogger' with the appropriate service name or IP
