@@ -32,5 +32,8 @@ export PATH=$PATH:$(go env GOPATH)/bin
 sudo docker build -t glogger .
 sudo docker run -p 8081:8081 -p 2112:2112 glogger
 
-# gLogger and Prometheus collector start
+# gLogger, Prometheus collector, Grafana start
 docker-compose up --build
+
+# Stop services
+docker-compose down
