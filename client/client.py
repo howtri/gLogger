@@ -4,7 +4,7 @@ import logger_pb2_grpc
 
 def run():
     # Connect to the gRPC server
-    channel = grpc.insecure_channel('0.0.0.0:8081')
+    channel = grpc.insecure_channel('0.0.0.0:30081')
     stub = logger_pb2_grpc.LoggerStub(channel)
 
     # Make a Write request

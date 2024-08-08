@@ -37,3 +37,9 @@ docker-compose up --build
 
 # Stop services
 docker-compose down
+
+# Get K3s
+curl -sfL https://get.k3s.io | sh -
+
+# Push glogger to docker hub
+docker push howtri/glogger:latest

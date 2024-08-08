@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana
+        ports:
+        - containerPort: 3000
+        volumeMounts:
+        - name: grafana-provisioning-config
+          mountPath: /etc/grafana/provisioning/datasources/datasource.yml
+          subPath: datasource.yml
+        - name: grafana-provisioning-config
+          mountPath: /etc/grafana/provisioning/dashboards/default.yml
+          subPath: default.yml
+        - name: grafana-provisioning-config
+          mountPath: /etc/grafana/provisioning/dashboards/glogger-dashboard.json
+          subPath: glogger-dashboard.json
+      volumes:
+      - name: grafana-provisioning-config
+        configMap:
+          name: grafana-provisioning-config

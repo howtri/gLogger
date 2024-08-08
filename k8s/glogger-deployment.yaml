@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: glogger
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: glogger
+  template:
+    metadata:
+      labels:
+        app: glogger
+    spec:
+      containers:
+      - name: glogger
+        image: howtri/glogger:latest
+        ports:
+        - containerPort: 8081
+        - containerPort: 2112
